@@ -83,14 +83,14 @@ setup_vnc() {
 	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/vncstart" ]]; then
 		cp -f "$CURR_DIR/distro/vncstart" "$UBUNTU_DIR/usr/local/bin/vncstart"
 	else
-		downloader "$CURR_DIR/vncstart" "https://raw.githubusercontent.com/modded-ubuntu/modded-ubuntu/master/distro/vncstart"
+		downloader "$CURR_DIR/vncstart" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/vncstart"
 		mv -f "$CURR_DIR/vncstart" "$UBUNTU_DIR/usr/local/bin/vncstart"
 	fi
 
 	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/vncstop" ]]; then
 		cp -f "$CURR_DIR/distro/vncstop" "$UBUNTU_DIR/usr/local/bin/vncstop"
 	else
-		downloader "$CURR_DIR/vncstop" "https://raw.githubusercontent.com/modded-ubuntu/modded-ubuntu/master/distro/vncstop"
+		downloader "$CURR_DIR/vncstop" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/vncstop"
 		mv -f "$CURR_DIR/vncstop" "$UBUNTU_DIR/usr/local/bin/vncstop"
 	fi
 	chmod +x "$UBUNTU_DIR/usr/local/bin/vncstart"
@@ -101,7 +101,7 @@ setup_config_tool() {
 	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/ubuntu-config.sh" ]]; then
 		cp -f "$CURR_DIR/distro/ubuntu-config.sh" "$UBUNTU_DIR/usr/local/bin/ubuntu-config"
 	else
-		downloader "$CURR_DIR/ubuntu-config.sh" "https://raw.githubusercontent.com/modded-ubuntu/modded-ubuntu/master/distro/ubuntu-config.sh"
+		downloader "$CURR_DIR/ubuntu-config.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/ubuntu-config.sh"
 		mv -f "$CURR_DIR/ubuntu-config.sh" "$UBUNTU_DIR/usr/local/bin/ubuntu-config"
 	fi
 	chmod +x "$UBUNTU_DIR/usr/local/bin/ubuntu-config"
@@ -114,7 +114,7 @@ permission() {
 	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/user.sh" ]]; then
 		cp -f "$CURR_DIR/distro/user.sh" "$UBUNTU_DIR/root/user.sh"
 	else
-		downloader "$CURR_DIR/user.sh" "https://raw.githubusercontent.com/modded-ubuntu/modded-ubuntu/master/distro/user.sh"
+		downloader "$CURR_DIR/user.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/user.sh"
 		mv -f "$CURR_DIR/user.sh" "$UBUNTU_DIR/root/user.sh"
 	fi
 	chmod +x $UBUNTU_DIR/root/user.sh

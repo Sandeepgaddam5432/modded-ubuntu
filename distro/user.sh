@@ -81,13 +81,13 @@ setup_gui_files() {
     fi
 
     # If not in repository or copy failed, download from GitHub
-    if download_file "gui.sh" "https://raw.githubusercontent.com/modded-ubuntu/modded-ubuntu/master/distro/gui.sh" "$gui_path"; then
+    if download_file "gui.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh" "$gui_path"; then
         echo -e "\n${R} [${W}-${R}]${G} GUI file setup complete!"${W}
         return 0
     else
         # Try alternative download method as fallback
         echo -e "\n${R} [${W}-${R}]${Y} Trying alternative download method..."${W}
-        if wget -q --show-progress -O "$gui_path.tmp" "https://raw.githubusercontent.com/modded-ubuntu/modded-ubuntu/master/distro/gui.sh"; then
+        if wget -q --show-progress -O "$gui_path.tmp" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh"; then
             if [ -s "$gui_path.tmp" ]; then
                 mv "$gui_path.tmp" "$gui_path"
                 chmod +x "$gui_path"
@@ -125,9 +125,9 @@ login() {
 #!/bin/bash
 echo "Downloading gui.sh file..."
 if command -v curl &> /dev/null; then
-    curl -L -o ~/gui.sh https://raw.githubusercontent.com/modded-ubuntu/modded-ubuntu/master/distro/gui.sh
+    curl -L -o ~/gui.sh https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh
 elif command -v wget &> /dev/null; then
-    wget -O ~/gui.sh https://raw.githubusercontent.com/modded-ubuntu/modded-ubuntu/master/distro/gui.sh
+    wget -O ~/gui.sh https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh
 else
     echo "Error: Neither curl nor wget is installed. Please install one of them first."
     exit 1
