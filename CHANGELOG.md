@@ -1,5 +1,15 @@
 ## Changelog
 
+## [2.1.0] - 2023-06-15
+
+### Added
+- Ubuntu Configuration Tool (GUI for system management)
+- Easily manage software installation
+- Theme and appearance customization through GUI
+- VNC settings management
+- System performance optimization
+- Backup and restore capabilities
+
 ## [2.0.0] - 2023-01-20
 
 ### Added

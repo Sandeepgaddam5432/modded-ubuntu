@@ -97,6 +97,16 @@ setup_vnc() {
 	chmod +x "$UBUNTU_DIR/usr/local/bin/vncstop"
 }
 
+setup_config_tool() {
+	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/ubuntu-config.sh" ]]; then
+		cp -f "$CURR_DIR/distro/ubuntu-config.sh" "$UBUNTU_DIR/usr/local/bin/ubuntu-config"
+	else
+		downloader "$CURR_DIR/ubuntu-config.sh" "https://raw.githubusercontent.com/modded-ubuntu/modded-ubuntu/master/distro/ubuntu-config.sh"
+		mv -f "$CURR_DIR/ubuntu-config.sh" "$UBUNTU_DIR/usr/local/bin/ubuntu-config"
+	fi
+	chmod +x "$UBUNTU_DIR/usr/local/bin/ubuntu-config"
+}
+
 permission() {
 	banner
 	echo -e "${R} [${W}-${R}]${C} Setting up Environment..."${W}
@@ -110,6 +120,7 @@ permission() {
 	chmod +x $UBUNTU_DIR/root/user.sh
 
 	setup_vnc
+	setup_config_tool
 	echo "$(getprop persist.sys.timezone)" > $UBUNTU_DIR/etc/timezone
 	echo "proot-distro login ubuntu" > $PREFIX/bin/ubuntu
 	chmod +x "$PREFIX/bin/ubuntu"
@@ -123,6 +134,7 @@ permission() {
 			${R} [${W}-${R}]${G} Type ${C}ubuntu${G} to run Ubuntu CLI.
 			${R} [${W}-${R}]${G} If you Want to Use UBUNTU in GUI MODE then ,
 			${R} [${W}-${R}]${G} Run ${C}ubuntu${G} first & then type ${C}bash user.sh${W}
+			${R} [${W}-${R}]${G} To use the configuration tool, run ${C}ubuntu-config${G} in GUI mode${W}
 		EOF
 		{ echo; sleep 2; exit 1; }
 	else

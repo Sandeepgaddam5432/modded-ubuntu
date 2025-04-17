@@ -272,12 +272,25 @@ config() {
 	echo -e "${R} [${W}-${R}]${C} Rebuilding Font Cache..\n"${W}
 	fc-cache -fv
 
+	# Create desktop entry for Ubuntu Configuration Tool
+	echo -e "${R} [${W}-${R}]${C} Creating desktop entry for Ubuntu Configuration Tool..\n"${W}
+	cat > /usr/share/applications/ubuntu-config.desktop << EOF
+[Desktop Entry]
+Name=Ubuntu Configuration Tool
+Comment=Configure and manage your Ubuntu installation
+Exec=ubuntu-config
+Icon=preferences-system
+Terminal=false
+Type=Application
+Categories=GTK;Settings;System;
+StartupNotify=true
+EOF
+
 	echo -e "${R} [${W}-${R}]${C} Upgrading the System..\n"${W}
 	apt update
 	yes | apt upgrade
 	apt clean
 	yes | apt autoremove
-
 }
 
 # ----------------------------

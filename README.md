@@ -25,6 +25,7 @@
 - Sublime Text Editor (only for arm64/aarch64)
 - Easy for Beginners
 - Comes with some cool themes.
+- Ubuntu Configuration Tool (GUI for system management)
 
 ### Installation
 - Firstly install [Termux](https://termux.com) apk from [HERE](https://f-droid.org/repo/com.termux_118.apk)
@@ -67,6 +68,7 @@
 - **Type `ubuntu` to run Ubuntu CLI.**
 - **Type `vncstart` to run Vncserver**
 - **Type `vncstop` to stop Vncserver**
+- **Type `ubuntu-config` to run the Configuration Tool (in GUI mode)**
 
 - **Type `bash remove.sh` to remove Ubuntu Modded Os**
 
