@@ -1,5 +1,21 @@
 ## Changelog
 
+## [3.0.0] - 2023-08-20
+
+### Added
+- Converted entire codebase to install Debian instead of Ubuntu
+- Improved package management for Debian compatibility
+- Better architecture detection for VSCode and other applications
+- Enhanced repository handling for Debian
+- Automatic detection of Debian version codenames
+- More reliable Firefox installation (uses system Firefox/Firefox-ESR when available)
+
+### Changed
+- All references from Ubuntu to Debian throughout the codebase
+- Configuration tool renamed to debian-config
+- Improved error handling for Debian package compatibility 
+- Modified theme application for better Debian compatibility
+
 ## [2.1.0] - 2023-06-15
 
 ### Added

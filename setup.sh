@@ -8,7 +8,7 @@ C="$(printf '\033[1;36m')"
 W="$(printf '\033[1;37m')" 
 
 CURR_DIR=$(realpath "$(dirname "$BASH_SOURCE")")
-UBUNTU_DIR="$PREFIX/var/lib/proot-distro/installed-rootfs/ubuntu"
+DEBIAN_DIR="$PREFIX/var/lib/proot-distro/installed-rootfs/debian"
 
 banner() {
 	clear
@@ -18,7 +18,7 @@ banner() {
 		${G}    |__| |__] |__| | \|  |  |__|    |  | |__| |__/ 
 
 	EOF
-	echo -e "${G}     A modded gui version of ubuntu for Termux\n\n"${W}
+	echo -e "${G}     A modded gui version of Debian for Termux\n\n"${W}
 }
 
 package() {
@@ -45,15 +45,15 @@ distro() {
 	echo -e "\n${R} [${W}-${R}]${C} Checking for Distro..."${W}
 	termux-reload-settings
 	
-	if [[ -d "$UBUNTU_DIR" ]]; then
+	if [[ -d "$DEBIAN_DIR" ]]; then
 		echo -e "\n${R} [${W}-${R}]${G} Distro already installed."${W}
 		exit 0
 	else
-		proot-distro install ubuntu
+		proot-distro install debian
 		termux-reload-settings
 	fi
 	
-	if [[ -d "$UBUNTU_DIR" ]]; then
+	if [[ -d "$DEBIAN_DIR" ]]; then
 		echo -e "\n${R} [${W}-${R}]${G} Installed Successfully !!"${W}
 	else
 		echo -e "\n${R} [${W}-${R}]${G} Error Installing Distro !\n"${W}
@@ -81,30 +81,40 @@ downloader(){
 
 setup_vnc() {
 	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/vncstart" ]]; then
-		cp -f "$CURR_DIR/distro/vncstart" "$UBUNTU_DIR/usr/local/bin/vncstart"
+		cp -f "$CURR_DIR/distro/vncstart" "$DEBIAN_DIR/usr/local/bin/vncstart"
 	else
 		downloader "$CURR_DIR/vncstart" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/vncstart"
-		mv -f "$CURR_DIR/vncstart" "$UBUNTU_DIR/usr/local/bin/vncstart"
+		mv -f "$CURR_DIR/vncstart" "$DEBIAN_DIR/usr/local/bin/vncstart"
 	fi
 
 	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/vncstop" ]]; then
-		cp -f "$CURR_DIR/distro/vncstop" "$UBUNTU_DIR/usr/local/bin/vncstop"
+		cp -f "$CURR_DIR/distro/vncstop" "$DEBIAN_DIR/usr/local/bin/vncstop"
 	else
 		downloader "$CURR_DIR/vncstop" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/vncstop"
-		mv -f "$CURR_DIR/vncstop" "$UBUNTU_DIR/usr/local/bin/vncstop"
+		mv -f "$CURR_DIR/vncstop" "$DEBIAN_DIR/usr/local/bin/vncstop"
 	fi
-	chmod +x "$UBUNTU_DIR/usr/local/bin/vncstart"
-	chmod +x "$UBUNTU_DIR/usr/local/bin/vncstop"
+	chmod +x "$DEBIAN_DIR/usr/local/bin/vncstart"
+	chmod +x "$DEBIAN_DIR/usr/local/bin/vncstop"
 }
 
 setup_config_tool() {
-	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/ubuntu-config.sh" ]]; then
-		cp -f "$CURR_DIR/distro/ubuntu-config.sh" "$UBUNTU_DIR/usr/local/bin/ubuntu-config"
+	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/debian-config.sh" ]]; then
+		cp -f "$CURR_DIR/distro/debian-config.sh" "$DEBIAN_DIR/usr/local/bin/debian-config"
 	else
-		downloader "$CURR_DIR/ubuntu-config.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/ubuntu-config.sh"
-		mv -f "$CURR_DIR/ubuntu-config.sh" "$UBUNTU_DIR/usr/local/bin/ubuntu-config"
+		# Convert ubuntu-config.sh to debian-config.sh
+		if [[ -e "$CURR_DIR/distro/ubuntu-config.sh" ]]; then
+			cp -f "$CURR_DIR/distro/ubuntu-config.sh" "$CURR_DIR/distro/debian-config.sh"
+			sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/distro/debian-config.sh"
+			sed -i 's/ubuntu/debian/g' "$CURR_DIR/distro/debian-config.sh"
+			cp -f "$CURR_DIR/distro/debian-config.sh" "$DEBIAN_DIR/usr/local/bin/debian-config"
+		else
+			downloader "$CURR_DIR/debian-config.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/ubuntu-config.sh"
+			sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/debian-config.sh" 
+			sed -i 's/ubuntu/debian/g' "$CURR_DIR/debian-config.sh"
+			mv -f "$CURR_DIR/debian-config.sh" "$DEBIAN_DIR/usr/local/bin/debian-config"
+		fi
 	fi
-	chmod +x "$UBUNTU_DIR/usr/local/bin/ubuntu-config"
+	chmod +x "$DEBIAN_DIR/usr/local/bin/debian-config"
 }
 
 permission() {
@@ -112,29 +122,33 @@ permission() {
 	echo -e "${R} [${W}-${R}]${C} Setting up Environment..."${W}
 
 	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/user.sh" ]]; then
-		cp -f "$CURR_DIR/distro/user.sh" "$UBUNTU_DIR/root/user.sh"
+		cp -f "$CURR_DIR/distro/user.sh" "$DEBIAN_DIR/root/user.sh"
+		sed -i 's/Ubuntu/Debian/g' "$DEBIAN_DIR/root/user.sh"
+		sed -i 's/ubuntu/debian/g' "$DEBIAN_DIR/root/user.sh"
 	else
 		downloader "$CURR_DIR/user.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/user.sh"
-		mv -f "$CURR_DIR/user.sh" "$UBUNTU_DIR/root/user.sh"
+		sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/user.sh"
+		sed -i 's/ubuntu/debian/g' "$CURR_DIR/user.sh"
+		mv -f "$CURR_DIR/user.sh" "$DEBIAN_DIR/root/user.sh"
 	fi
-	chmod +x $UBUNTU_DIR/root/user.sh
+	chmod +x $DEBIAN_DIR/root/user.sh
 
 	setup_vnc
 	setup_config_tool
-	echo "$(getprop persist.sys.timezone)" > $UBUNTU_DIR/etc/timezone
-	echo "proot-distro login ubuntu" > $PREFIX/bin/ubuntu
-	chmod +x "$PREFIX/bin/ubuntu"
+	echo "$(getprop persist.sys.timezone)" > $DEBIAN_DIR/etc/timezone
+	echo "proot-distro login debian" > $PREFIX/bin/debian
+	chmod +x "$PREFIX/bin/debian"
 	termux-reload-settings
 
-	if [[ -e "$PREFIX/bin/ubuntu" ]]; then
+	if [[ -e "$PREFIX/bin/debian" ]]; then
 		banner
 		cat <<- EOF
-			${R} [${W}-${R}]${G} Ubuntu-22.04 (CLI) is now Installed on your Termux
+			${R} [${W}-${R}]${G} Debian (CLI) is now Installed on your Termux
 			${R} [${W}-${R}]${G} Restart your Termux to Prevent Some Issues.
-			${R} [${W}-${R}]${G} Type ${C}ubuntu${G} to run Ubuntu CLI.
-			${R} [${W}-${R}]${G} If you Want to Use UBUNTU in GUI MODE then ,
-			${R} [${W}-${R}]${G} Run ${C}ubuntu${G} first & then type ${C}bash user.sh${W}
-			${R} [${W}-${R}]${G} To use the configuration tool, run ${C}ubuntu-config${G} in GUI mode${W}
+			${R} [${W}-${R}]${G} Type ${C}debian${G} to run Debian CLI.
+			${R} [${W}-${R}]${G} If you Want to Use Debian in GUI MODE then ,
+			${R} [${W}-${R}]${G} Run ${C}debian${G} first & then type ${C}bash user.sh${W}
+			${R} [${W}-${R}]${G} To use the configuration tool, run ${C}debian-config${G} in GUI mode${W}
 		EOF
 		{ echo; sleep 2; exit 1; }
 	else

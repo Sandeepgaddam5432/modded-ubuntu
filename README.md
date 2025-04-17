@@ -12,20 +12,20 @@
 <img src="https://img.shields.io/github/issues/modded-ubuntu/modded-ubuntu?color=red&style=flat-square">
 <img src="https://img.shields.io/github/forks/modded-ubuntu/modded-ubuntu?color=teal&style=flat-square">
 </p>
-<p align="center"><b>Run Ubuntu GUI on your termux with much features.</b></p>
+<p align="center"><b>Run Debian GUI on your termux with much features.</b></p>
 
 ### Features
 
 - Fixed Audio Output
 - Lightweight {Requires at least 4GB Storage}
 - 2 Browsers (Chromium & Mozilla Firefox)
-- Supports Bangla Fonts
+- Supports Multiple Fonts
 - VLC Media Player and MPV media player
 - Visual Studio Code (buggy on arm )
 - Sublime Text Editor (only for arm64/aarch64)
 - Easy for Beginners
 - Comes with some cool themes.
-- Ubuntu Configuration Tool (GUI for system management)
+- Debian Configuration Tool (GUI for system management)
 
 ### Installation
 - Firstly install [Termux](https://termux.com) apk from [HERE](https://f-droid.org/repo/com.termux_118.apk)
@@ -39,19 +39,19 @@
 
 - Then Restart your Termux & Type the following commands
 
-   - `ubuntu`
+   - `debian`
    - `bash user.sh`
 
-- Type your ubuntu root username. Must be lowercase & no space included.
+- Type your debian root username. Must be lowercase & no space included.
 
 - Then Again Restart your Termux & Type the following commands
 
-   - `ubuntu`
+   - `debian`
    - `sudo bash gui.sh`
 
 - **You have to note your VNC password !!**
 
-- Ubuntu image is now successfully installed .
+- Debian image is now successfully installed .
 
   - Type `vncstart` to run Vncserver
   - Type `vncstop` to stop Vncserver
@@ -65,12 +65,12 @@
 
 ### NOTE :
 
-- **Type `ubuntu` to run Ubuntu CLI.**
+- **Type `debian` to run Debian CLI.**
 - **Type `vncstart` to run Vncserver**
 - **Type `vncstop` to stop Vncserver**
-- **Type `ubuntu-config` to run the Configuration Tool (in GUI mode)**
+- **Type `debian-config` to run the Configuration Tool (in GUI mode)**
 
-- **Type `bash remove.sh` to remove Ubuntu Modded Os**
+- **Type `bash remove.sh` to remove Debian Modded Os**
 
 ### Video Tutorial : 
 
@@ -84,9 +84,9 @@ Licensed under [Apache License](./LICENSE)
 ### Credits : 
 
 ```
-This Tool Uses the ubuntu image provided by the termux package `proot-distro` 
+This Tool Uses the debian image provided by the termux package `proot-distro` 
 
-Full Credit of the Ubuntu image goes to them .
+Full Credit of the Debian image goes to them.
 
 Termux Proot Distro - https://github.com/termux/proot-distro
 ```

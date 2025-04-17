@@ -12,7 +12,7 @@ banner() {
     printf "\033[36m    |  | |__] |  | |\ |  |  |  |    |\/| |  | |  \ \033[0m\n"
     printf "\033[32m    |__| |__] |__| | \|  |  |__|    |  | |__| |__/ \033[0m\n"
     printf "\033[0m\n"
-    printf "     \033[32mA modded gui version of ubuntu for Termux\033[0m\n"
+    printf "     \033[32mA modded gui version of Debian for Termux\033[0m\n"
     printf "\033[0m\n"
 
 }
@@ -67,13 +67,16 @@ setup_gui_files() {
     
     echo -e "\n${R} [${W}-${R}]${C} Setting up GUI files..."${W}
 
-    # First check the source from the modded-ubuntu repository
+    # First check the source from the local repository
     if [ -e '/data/data/com.termux/files/home/modded-ubuntu/distro/gui.sh' ]; then
         echo -e "\n${R} [${W}-${R}]${G} Found gui.sh in local repository"${W}
         cp '/data/data/com.termux/files/home/modded-ubuntu/distro/gui.sh' "$gui_path"
         if [ $? -eq 0 ] && [ -s "$gui_path" ]; then
+            # Replace ubuntu references with debian
+            sed -i 's/Ubuntu/Debian/g' "$gui_path"
+            sed -i 's/ubuntu/debian/g' "$gui_path"
             chmod +x "$gui_path"
-            echo -e "\n${R} [${W}-${R}]${G} Successfully copied gui.sh from local repository!"${W}
+            echo -e "\n${R} [${W}-${R}]${G} Successfully copied and modified gui.sh from local repository!"${W}
             return 0
         else
             echo -e "\n${R} [${W}-${R}]${Y} Error copying from local repository. Will try downloading..."${W}
@@ -81,7 +84,12 @@ setup_gui_files() {
     fi
 
     # If not in repository or copy failed, download from GitHub
-    if download_file "gui.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh" "$gui_path"; then
+    if download_file "gui.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh" "$gui_path.tmp"; then
+        # Replace ubuntu references with debian
+        sed -i 's/Ubuntu/Debian/g' "$gui_path.tmp"
+        sed -i 's/ubuntu/debian/g' "$gui_path.tmp"
+        mv "$gui_path.tmp" "$gui_path"
+        chmod +x "$gui_path"
         echo -e "\n${R} [${W}-${R}]${G} GUI file setup complete!"${W}
         return 0
     else
@@ -89,9 +97,12 @@ setup_gui_files() {
         echo -e "\n${R} [${W}-${R}]${Y} Trying alternative download method..."${W}
         if wget -q --show-progress -O "$gui_path.tmp" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh"; then
             if [ -s "$gui_path.tmp" ]; then
+                # Replace ubuntu references with debian
+                sed -i 's/Ubuntu/Debian/g' "$gui_path.tmp"
+                sed -i 's/ubuntu/debian/g' "$gui_path.tmp"
                 mv "$gui_path.tmp" "$gui_path"
                 chmod +x "$gui_path"
-                echo -e "\n${R} [${W}-${R}]${G} Successfully downloaded gui.sh using wget!"${W}
+                echo -e "\n${R} [${W}-${R}]${G} Successfully downloaded and modified gui.sh using wget!"${W}
                 return 0
             else
                 echo -e "\n${R} [${W}-${R}]${R} Downloaded file is empty."${W}
@@ -114,7 +125,7 @@ login() {
     usermod -aG sudo ${user}
     echo "${user}:${pass}" | chpasswd
     echo "$user ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
-    echo "proot-distro login --user $user ubuntu --bind /dev/null:/proc/sys/kernel/cap_last_last --shared-tmp --fix-low-ports" > /data/data/com.termux/files/usr/bin/ubuntu
+    echo "proot-distro login --user $user debian --bind /dev/null:/proc/sys/kernel/cap_last_last --shared-tmp --fix-low-ports" > /data/data/com.termux/files/usr/bin/debian
     
     # Set up GUI files
     setup_gui_files "$user"
@@ -125,32 +136,45 @@ login() {
 #!/bin/bash
 echo "Downloading gui.sh file..."
 if command -v curl &> /dev/null; then
-    curl -L -o ~/gui.sh https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh
+    curl -L -o ~/gui.sh.tmp https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh
+    if [ -s ~/gui.sh.tmp ]; then
+        sed -i 's/Ubuntu/Debian/g' ~/gui.sh.tmp
+        sed -i 's/ubuntu/debian/g' ~/gui.sh.tmp
+        mv ~/gui.sh.tmp ~/gui.sh
+        chmod +x ~/gui.sh
+        echo "gui.sh has been successfully downloaded and modified!"
+    else
+        echo "Downloaded file is empty. Please check your internet connection."
+        rm -f ~/gui.sh.tmp
+    fi
 elif command -v wget &> /dev/null; then
-    wget -O ~/gui.sh https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh
+    wget -O ~/gui.sh.tmp https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/gui.sh
+    if [ -s ~/gui.sh.tmp ]; then
+        sed -i 's/Ubuntu/Debian/g' ~/gui.sh.tmp
+        sed -i 's/ubuntu/debian/g' ~/gui.sh.tmp
+        mv ~/gui.sh.tmp ~/gui.sh
+        chmod +x ~/gui.sh
+        echo "gui.sh has been successfully downloaded and modified!"
+    else
+        echo "Downloaded file is empty. Please check your internet connection."
+        rm -f ~/gui.sh.tmp
+    fi
 else
     echo "Error: Neither curl nor wget is installed. Please install one of them first."
     exit 1
-fi
-
-if [ -s ~/gui.sh ]; then
-    chmod +x ~/gui.sh
-    echo "gui.sh has been successfully downloaded!"
-else
-    echo "Failed to download gui.sh. Please check your internet connection."
 fi
 EOF
     chmod +x "/home/$user/fix-gui.sh"
 
     clear
     echo
-    echo -e "\n${R} [${W}-${R}]${G} Restart your Termux & Type ${C}ubuntu"${W}
+    echo -e "\n${R} [${W}-${R}]${G} Restart your Termux & Type ${C}debian${G}"${W}
     
     if [ $gui_setup_status -eq 0 ]; then
-        echo -e "\n${R} [${W}-${R}]${G} Then Type ${C}sudo bash gui.sh"${W}
+        echo -e "\n${R} [${W}-${R}]${G} Then Type ${C}sudo bash gui.sh${G}"${W}
     else
         echo -e "\n${R} [${W}-${R}]${Y} GUI file setup had issues. After logging in, type: ${C}bash fix-gui.sh${W}"
-        echo -e "\n${R} [${W}-${R}]${Y} Then type: ${C}sudo bash gui.sh"${W}
+        echo -e "\n${R} [${W}-${R}]${Y} Then type: ${C}sudo bash gui.sh${W}"
     fi
     echo
 }
