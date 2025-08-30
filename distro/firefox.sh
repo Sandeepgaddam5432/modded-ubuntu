@@ -1,14 +1,223 @@
 #!/bin/bash
 
-[[ $(command -v snap) ]] && snap remove firefox
-PREFFILE="/etc/apt/preferences.d/mozilla-firefox"
+# Enhanced Firefox Latest Version Installer with Professional UI/UX
+# Author: Sandeep Gaddam
+# Version: 2.0 - Always Latest
 
+# Color definitions
+declare -r RED='\033[1;31m'
+declare -r GREEN='\033[1;32m'
+declare -r YELLOW='\033[1;33m'
+declare -r BLUE='\033[1;34m'
+declare -r CYAN='\033[1;36m'
+declare -r WHITE='\033[1;37m'
+declare -r MAGENTA='\033[1;35m'
+declare -r RESET='\033[0m'
+declare -r BOLD='\033[1m'
+
+# Script configuration
+SCRIPT_NAME="Firefox Latest Installer"
+SCRIPT_VERSION="2.0"
+LOG_FILE="$HOME/.firefox-installer.log"
+PREFFILE="/etc/apt/preferences.d/mozilla-firefox"
+BACKUP_DIR="/tmp/firefox-backup-$(date +%Y%m%d_%H%M%S)"
+
+# Logging function
+log_message() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
+}
+
+# Enhanced banner with Firefox branding
+show_banner() {
+    clear
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}███████╗██╗██████╗ ███████╗███████╗ ██████╗ ██╗  ██╗${RESET}    ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}██╔════╝██║██╔══██╗██╔════╝██╔════╝██╔═══██╗╚██╗██╔╝${RESET}    ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}█████╗  ██║██████╔╝█████╗  █████╗  ██║   ██║ ╚███╔╝${RESET}     ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}██╔══╝  ██║██╔══██╗██╔══╝  ██╔══╝  ██║   ██║ ██╔██╗${RESET}     ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}██║     ██║██║  ██║███████╗██║     ╚██████╔╝██╔╝ ██╗${RESET}    ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝${RESET}    ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}        ${MAGENTA}${BOLD}L A T E S T   I N S T A L L E R   v${SCRIPT_VERSION}${RESET}         ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${GREEN}Always Install Latest Firefox from Mozilla PPA${RESET}          ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${WHITE}By: Sandeep Gaddam | Professional Experience${RESET}        ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    echo
+}
+
+# Progress bar with enhanced animation
+show_progress() {
+    local current=$1
+    local total=$2
+    local message=$3
+    local percentage=$((current * 100 / total))
+    local filled=$((percentage / 2))
+    local empty=$((50 - filled))
+    
+    printf "\r${CYAN}[${RESET}"
+    printf "%${filled}s" | tr ' ' '█'
+    printf "%${empty}s" | tr ' ' '░'
+    printf "${CYAN}]${RESET} ${YELLOW}%3d%%${RESET} ${WHITE}%s${RESET}" "$percentage" "$message"
+}
+
+# Spinner for longer operations
+show_spinner() {
+    local message="$1"
+    local pid="$2"
+    local delay=0.1
+    local spinstr='🔄🔃🔁⚙️'
+    
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf "\r${CYAN}%s${RESET} ${WHITE}%s${RESET}" "${spinstr:0:2}" "$message"
+        spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+    done
+    printf "\r${GREEN}✅${RESET} ${WHITE}%s - Complete${RESET}\n" "$message"
+}
+
+# System requirements and root check
+check_prerequisites() {
+    echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${BLUE}║${RESET}                 ${BOLD}SYSTEM REQUIREMENTS CHECK${RESET}                ${BLUE}║${RESET}"
+    echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    echo
+    
+    # Root check
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}❌ This script must be run as root (sudo)${RESET}"
+        echo -e "${WHITE}   Please run: ${YELLOW}sudo bash firefox.sh${RESET}"
+        log_message "ERROR" "Script not run as root"
+        exit 1
+    else
+        echo -e "${GREEN}✅ Root privileges confirmed${RESET}"
+    fi
+    
+    # Check if we're on a Debian/Ubuntu system
+    if [ -f /etc/debian_version ]; then
+        echo -e "${GREEN}✅ Debian/Ubuntu system detected${RESET}"
+        local distro=$(lsb_release -cs 2>/dev/null || echo "unknown")
+        echo -e "${WHITE}   Distribution: ${CYAN}$distro${RESET}"
+    else
+        echo -e "${RED}❌ This script is designed for Debian/Ubuntu systems${RESET}"
+        log_message "ERROR" "Not a Debian/Ubuntu system"
+        exit 1
+    fi
+    
+    # Check internet connectivity
+    if ping -c 1 google.com >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ Internet connection available${RESET}"
+    else
+        echo -e "${RED}❌ No internet connection detected${RESET}"
+        log_message "ERROR" "No internet connection"
+        exit 1
+    fi
+    
+    echo
+}
+
+# Get current and available Firefox versions
+check_firefox_versions() {
+    echo -e "${CYAN}🔍 Checking Firefox versions...${RESET}"
+    
+    local current_version=""
+    if command -v firefox >/dev/null 2>&1; then
+        current_version=$(firefox --version 2>/dev/null | grep -oP 'Firefox \K[0-9.]+' || echo "Unknown")
+        echo -e "${WHITE}   Current installed version: ${YELLOW}$current_version${RESET}"
+    else
+        echo -e "${WHITE}   Firefox not currently installed${RESET}"
+    fi
+    
+    # Update package list silently for version check
+    apt-get update >/dev/null 2>&1
+    
+    local available_version=$(apt-cache policy firefox 2>/dev/null | grep -A1 "Candidate:" | tail -1 | awk '{print $1}' || echo "Unknown")
+    echo -e "${WHITE}   Latest available version: ${GREEN}$available_version${RESET}"
+    
+    echo
+    log_message "INFO" "Current: $current_version, Available: $available_version"
+}
+
+# Create backup if Firefox exists
+create_backup() {
+    if command -v firefox >/dev/null 2>&1; then
+        echo -e "${YELLOW}📦 Creating backup of current Firefox...${RESET}"
+        mkdir -p "$BACKUP_DIR"
+        
+        # Backup Firefox profiles if they exist
+        if [ -d "$HOME/.mozilla" ]; then
+            cp -r "$HOME/.mozilla" "$BACKUP_DIR/" 2>/dev/null
+            echo -e "${GREEN}✅ Firefox profiles backed up${RESET}"
+        fi
+        
+        log_message "INFO" "Backup created at $BACKUP_DIR"
+        echo -e "${WHITE}   Backup location: ${CYAN}$BACKUP_DIR${RESET}"
+        echo
+    fi
+}
+
+# Remove existing Firefox installations
+remove_existing_firefox() {
+    local steps=3
+    local current=0
+    
+    echo -e "${YELLOW}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${YELLOW}║${RESET}                 ${BOLD}REMOVING EXISTING FIREFOX${RESET}                ${YELLOW}║${RESET}"
+    echo -e "${YELLOW}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    echo
+    
+    # Remove snap Firefox if exists
+    ((current++))
+    show_progress $current $steps "Checking for snap Firefox..."
+    sleep 1
+    
+    if command -v snap >/dev/null 2>&1 && snap list | grep -q firefox 2>/dev/null; then
+        echo -e "\n${CYAN}🔄 Removing snap Firefox...${RESET}"
+        snap remove firefox >/dev/null 2>&1 &
+        show_spinner "Removing snap Firefox" $!
+        log_message "INFO" "Snap Firefox removed"
+    else
+        echo -e "\n${WHITE}   No snap Firefox found${RESET}"
+    fi
+    
+    # Remove APT Firefox
+    ((current++))
+    show_progress $current $steps "Removing APT Firefox packages..."
+    sleep 1
+    
+    if dpkg -l | grep -q firefox 2>/dev/null; then
+        echo -e "\n${CYAN}🔄 Removing existing Firefox packages...${RESET}"
+        apt-get remove --purge firefox* -y >/dev/null 2>&1 &
+        show_spinner "Removing Firefox packages" $!
+        log_message "INFO" "APT Firefox packages removed"
+    else
+        echo -e "\n${WHITE}   No APT Firefox packages found${RESET}"
+    fi
+    
+    # Clean up
+    ((current++))
+    show_progress $current $steps "Cleaning up package cache..."
+    sleep 1
+    
+    apt-get autoremove -y >/dev/null 2>&1
+    apt-get autoclean >/dev/null 2>&1
+    
+    echo -e "\n${GREEN}✅ Existing Firefox installations removed${RESET}"
+    echo
+}
+
+# Enhanced PGP key setup function
 print_key() {
     cat <<-EOF
 -----BEGIN PGP PUBLIC KEY BLOCK-----
-Comment: Hostname: 
-Version: Hockeypuck 2.1.0-189-g15ebf24
 
+PASTE YOUR PGP KEY HERE MANUALLY
 xo0ESXMwOwEEAL7UP143coSax/7/8UdgD+WjIoIxzqhkTeoGOyw/r2DlRCBPFAOH
 lsUIG3AZrHcPVzA3bRTGoEYlrQ9d0+FsUI57ozHdmlsaekEJpQ2x7wZL7c1GiRqC
 A4ERrC6kNJ5ruSUHhB+8qiksLWsTyjM7OjIdkmDbH/dYKdFUEKTdljKHABEBAAHN
@@ -158,24 +367,233 @@ B9xg0FPGwM10YNr5/czT9e4qyJYT6R7qumJnmjYvVdLFTnklIR98DT+S+wvaxTw5
 g7cp61/1wLFCfDKJ8iSeVJN4TKgUy58HSxsS1E8gPx2lHTlUOlV39o91lyz74deu
 o5I=
 =T8PE
+
 -----END PGP PUBLIC KEY BLOCK-----
 EOF
 }
 
-echo "deb https://ppa.launchpadcontent.net/mozillateam/ppa/ubuntu jammy main" | tee /etc/apt/sources.list.d/mozillateam-ubuntu-ppa-jammy.list
-
-print_key | gpg --dearmor > /etc/apt/trusted.gpg.d/firefox.gpg 2> /dev/null
-
-if [ ! -f $PREFFILE ]; then
-    mkdir -p /etc/apt/preferences.d/
-    cat > $PREFFILE <<EOF
+# Setup Mozilla repository with enhanced error handling
+setup_mozilla_repository() {
+    echo -e "${MAGENTA}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${MAGENTA}║${RESET}                ${BOLD}MOZILLA REPOSITORY SETUP${RESET}                 ${MAGENTA}║${RESET}"
+    echo -e "${MAGENTA}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    echo
+    
+    # Detect distribution
+    local distro_codename=$(lsb_release -cs 2>/dev/null)
+    if [ -z "$distro_codename" ]; then
+        distro_codename="jammy"  # Default fallback
+        echo -e "${YELLOW}⚠️  Could not detect distribution, using default: $distro_codename${RESET}"
+    fi
+    
+    echo -e "${CYAN}🔧 Setting up Mozilla PPA repository...${RESET}"
+    
+    # Add repository
+    local repo_file="/etc/apt/sources.list.d/mozillateam-ubuntu-ppa-${distro_codename}.list"
+    echo "deb https://ppa.launchpadcontent.net/mozillateam/ppa/ubuntu $distro_codename main" | tee "$repo_file" >/dev/null
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ Repository added successfully${RESET}"
+    else
+        echo -e "${RED}❌ Failed to add repository${RESET}"
+        log_message "ERROR" "Failed to add Mozilla repository"
+        exit 1
+    fi
+    
+    # Setup GPG key
+    echo -e "${CYAN}🔑 Setting up GPG key...${RESET}"
+    print_key | gpg --dearmor > /etc/apt/trusted.gpg.d/firefox.gpg 2>/dev/null
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ GPG key installed successfully${RESET}"
+    else
+        echo -e "${RED}❌ Failed to install GPG key${RESET}"
+        log_message "ERROR" "Failed to install GPG key"
+        exit 1
+    fi
+    
+    # Setup package preferences
+    echo -e "${CYAN}⚙️  Configuring package preferences...${RESET}"
+    
+    if [ ! -f "$PREFFILE" ]; then
+        mkdir -p /etc/apt/preferences.d/
+        cat > "$PREFFILE" <<EOF
 Package: *
 Pin: release o=LP-PPA-mozillateam
 Pin-Priority: 1001
 EOF
+        echo -e "${GREEN}✅ Package preferences configured${RESET}"
+    else
+        echo -e "${YELLOW}⚠️  Preferences file already exists, updating...${RESET}"
+        # Update existing preferences
+        sed -i 's/Pin-Priority:.*/Pin-Priority: 1001/' "$PREFFILE"
     fi
+    
+    # Setup unattended upgrades
+    echo -e "${CYAN}🔄 Configuring automatic updates...${RESET}"
+    echo "Unattended-Upgrade::Allowed-Origins:: \"LP-PPA-mozillateam:\${distro_codename}\";" | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox >/dev/null
+    
+    echo -e "${GREEN}✅ Mozilla repository setup complete${RESET}"
+    log_message "SUCCESS" "Mozilla repository configured"
+    echo
+}
 
-echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+# Install Firefox with progress tracking
+install_firefox() {
+    echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${GREEN}║${RESET}                  ${BOLD}FIREFOX INSTALLATION${RESET}                    ${GREEN}║${RESET}"
+    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    echo
+    
+    local steps=3
+    local current=0
+    
+    # Update package list
+    ((current++))
+    show_progress $current $steps "Updating package repositories..."
+    sleep 1
+    
+    echo -e "\n${CYAN}🔄 Updating package repositories...${RESET}"
+    apt-get update >/dev/null 2>&1 &
+    show_spinner "Updating repositories" $!
+    
+    # Install Firefox
+    ((current++))
+    show_progress $current $steps "Installing latest Firefox..."
+    sleep 1
+    
+    echo -e "\n${CYAN}🔥 Installing Firefox...${RESET}"
+    echo -e "${WHITE}   This may take a few minutes...${RESET}"
+    
+    apt install firefox -y >/dev/null 2>&1 &
+    show_spinner "Installing Firefox" $!
+    
+    # Verify installation
+    ((current++))
+    show_progress $current $steps "Verifying installation..."
+    sleep 2
+    
+    if command -v firefox >/dev/null 2>&1; then
+        local installed_version=$(firefox --version 2>/dev/null | grep -oP 'Firefox \K[0-9.]+' || echo "Unknown")
+        echo -e "\n${GREEN}🎉 Firefox successfully installed!${RESET}"
+        echo -e "${WHITE}   Installed version: ${BOLD}${GREEN}$installed_version${RESET}"
+        log_message "SUCCESS" "Firefox installed successfully - version $installed_version"
+    else
+        echo -e "\n${RED}❌ Firefox installation failed${RESET}"
+        log_message "ERROR" "Firefox installation failed"
+        exit 1
+    fi
+    
+    echo
+}
 
-apt-get update
-apt install firefox -y
+# Post-installation configuration
+post_installation_setup() {
+    echo -e "${CYAN}⚙️  Performing post-installation setup...${RESET}"
+    
+    # Create desktop entry if needed
+    if [ ! -f "/usr/share/applications/firefox.desktop" ]; then
+        echo -e "${YELLOW}📋 Creating desktop entry...${RESET}"
+        # Firefox package should create this, but just in case
+        update-desktop-database >/dev/null 2>&1
+    fi
+    
+    # Set Firefox as default browser (optional)
+    echo -e "${CYAN}🌐 Configuring default browser settings...${RESET}"
+    update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox 200 >/dev/null 2>&1
+    update-alternatives --install /usr/bin/gnome-www-browser gnome-www-browser /usr/bin/firefox 200 >/dev/null 2>&1
+    
+    echo -e "${GREEN}✅ Post-installation setup complete${RESET}"
+    log_message "SUCCESS" "Post-installation setup completed"
+}
+
+# Success message with usage instructions
+show_success_message() {
+    local final_version=$(firefox --version 2>/dev/null | grep -oP 'Firefox \K[0-9.]+' || echo "Unknown")
+    
+    echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${GREEN}║${RESET}                    ${BOLD}🎉 SUCCESS! 🎉${RESET}                         ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${WHITE}Firefox Latest Version Successfully Installed!${RESET}       ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${YELLOW}📊 INSTALLATION SUMMARY:${RESET}                            ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${WHITE}• Version: ${BOLD}${CYAN}$final_version${RESET}                                ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${WHITE}• Source: Mozilla PPA (Official)${RESET}                    ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${WHITE}• Auto-updates: Enabled${RESET}                             ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${WHITE}• Priority: Highest (1001)${RESET}                          ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${YELLOW}🚀 QUICK START:${RESET}                                     ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${WHITE}• Launch: ${CYAN}firefox${WHITE} or click desktop icon${RESET}              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${WHITE}• Check version: ${CYAN}firefox --version${RESET}                    ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${WHITE}• Run this script again to force latest update${RESET}      ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    if [ -d "$BACKUP_DIR" ]; then
+    echo -e "${GREEN}║${RESET}    ${MAGENTA}💾 BACKUP LOCATION:${RESET}                                 ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${WHITE}$BACKUP_DIR${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    fi
+    echo -e "${GREEN}║${RESET}    ${CYAN}💡 Pro Tip: This script always installs the latest${RESET}   ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}    ${CYAN}    version, even if Firefox is already installed!${RESET}   ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    
+    log_message "SUCCESS" "Installation completed - Firefox $final_version"
+}
+
+# Error handling function
+handle_error() {
+    local error_msg="$1"
+    echo -e "\n${RED}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${RED}║${RESET}                        ${BOLD}❌ ERROR ❌${RESET}                        ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}                                                              ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}Installation failed:${RESET}                                    ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${YELLOW}$error_msg${RESET}"
+    printf "${RED}║${RESET}%*s${RED}║${RESET}\n" $((62 - ${#error_msg})) ""
+    echo -e "${RED}║${RESET}                                                              ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${CYAN}💡 Troubleshooting Steps:${RESET}                              ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}1. Check internet connection${RESET}                           ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}2. Ensure you have root privileges${RESET}                     ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}3. Update system: apt update && apt upgrade${RESET}            ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}4. Check log: $LOG_FILE${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}5. Try running the script again${RESET}                        ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}                                                              ${RED}║${RESET}"
+    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    
+    log_message "ERROR" "$error_msg"
+    exit 1
+}
+
+# Cleanup function
+cleanup() {
+    # Remove temporary files if any
+    [ -f "$LOG_FILE.tmp" ] && rm -f "$LOG_FILE.tmp"
+    log_message "INFO" "Cleanup completed"
+}
+
+# Main execution function
+main() {
+    # Initialize logging
+    log_message "INFO" "Starting Firefox Latest Installer v$SCRIPT_VERSION"
+    
+    # Set up error trapping
+    trap 'handle_error "Unexpected error occurred during installation"' ERR
+    trap cleanup EXIT
+    
+    show_banner
+    check_prerequisites
+    check_firefox_versions
+    create_backup
+    remove_existing_firefox
+    setup_mozilla_repository
+    install_firefox
+    post_installation_setup
+    show_success_message
+    
+    # Clean up log file on success
+    [ -f "$LOG_FILE" ] && rm -f "$LOG_FILE"
+    
+    echo -e "${WHITE}Firefox installation completed successfully! 🎉${RESET}"
+}
+
+# Execute main function
+main "$@"
