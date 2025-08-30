@@ -2,7 +2,7 @@
 
 # Enhanced Debian Setup with Professional UI/UX
 # Author: Sandeep Gaddam
-# Version: 2.0
+# Version: 3.0 - Professional Experience
 
 # Color definitions
 declare -r RED='\033[1;31m'
@@ -17,10 +17,21 @@ declare -r BOLD='\033[1m'
 
 # Script configuration
 SCRIPT_NAME="Debian GUI Setup"
-SCRIPT_VERSION="2.0"
+SCRIPT_VERSION="3.0"
 LOG_FILE="$HOME/.debian-setup.log"
 CURR_DIR=$(realpath "$(dirname "$BASH_SOURCE")")
+
+# Fix PREFIX variable if not set
+if [ -z "$PREFIX" ]; then
+    if [ -d "/data/data/com.termux/files/usr" ]; then
+        export PREFIX="/data/data/com.termux/files/usr"
+    else
+        export PREFIX="/usr"
+    fi
+fi
+
 DEBIAN_DIR="$PREFIX/var/lib/proot-distro/installed-rootfs/debian"
+REPO_BASE="https://raw.githubusercontent.com/Sandeepgaddam5432/modded-ubuntu/master"
 
 # Logging function
 log_message() {
@@ -42,7 +53,7 @@ show_banner() {
     echo -e "${CYAN}║${RESET}    ${YELLOW}██████╔╝███████╗██████╔╝██║██║  ██║██║ ╚████║${RESET}        ${CYAN}║${RESET}"
     echo -e "${CYAN}║${RESET}    ${YELLOW}╚═════╝ ╚══════╝╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝${RESET}        ${CYAN}║${RESET}"
     echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
-    echo -e "${CYAN}║${RESET}        ${MAGENTA}${BOLD}G U I   S E T U P   T O O L   v${SCRIPT_VERSION}${RESET}          ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}        ${MAGENTA}${BOLD}S E T U P   T O O L   v${SCRIPT_VERSION}${RESET}              ${CYAN}║${RESET}"
     echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
     echo -e "${CYAN}║${RESET}    ${GREEN}Professional Debian GUI Environment for Termux${RESET}      ${CYAN}║${RESET}"
     echo -e "${CYAN}║${RESET}    ${WHITE}By: Sandeep Gaddam | Enhanced Experience${RESET}            ${CYAN}║${RESET}"
@@ -51,7 +62,7 @@ show_banner() {
     echo
 }
 
-# Advanced progress bar with animation
+# Progress bar function
 show_progress() {
     local current=$1
     local total=$2
@@ -71,44 +82,77 @@ show_spinner() {
     local message="$1"
     local pid="$2"
     local delay=0.1
-    local spinstr='|/-\'
+    local spinstr='🔄🔃🔁⚙️'
     
     while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
         local temp=${spinstr#?}
-        printf "\r${CYAN}[${spinstr:0:1}]${RESET} ${WHITE}%s${RESET}" "$message"
+        printf "\r${CYAN}%s${RESET} ${WHITE}%s${RESET}" "${spinstr:0:2}" "$message"
         spinstr=$temp${spinstr%"$temp"}
         sleep $delay
     done
-    printf "\r${GREEN}[✓]${RESET} ${WHITE}%s - Complete${RESET}\n" "$message"
+    printf "\r${GREEN}✅${RESET} ${WHITE}%s - Complete${RESET}\n" "$message"
 }
 
-# System requirements check
+# Enhanced system requirements check
 check_system_requirements() {
     echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${RESET}"
     echo -e "${BLUE}║${RESET}                 ${BOLD}SYSTEM REQUIREMENTS CHECK${RESET}                ${BLUE}║${RESET}"
     echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${RESET}"
     echo
     
+    # Enhanced Termux detection
+    local is_termux=false
+    
+    # Method 1: Check for Termux package directory
+    if [ -d "/data/data/com.termux" ]; then
+        is_termux=true
+    # Method 2: Check for Termux environment variables
+    elif [ -n "$TERMUX_VERSION" ] || [ -n "$PREFIX" ]; then
+        is_termux=true
+    # Method 3: Check for Termux-specific paths
+    elif [ -f "/data/data/com.termux/files/usr/bin/termux-info" ]; then
+        is_termux=true
+    # Method 4: Check if we can access Termux directories
+    elif [ -w "/data/data/com.termux/files/home" ] 2>/dev/null; then
+        is_termux=true
+    # Method 5: Check for pkg command (Termux package manager)
+    elif command -v pkg >/dev/null 2>&1; then
+        is_termux=true
+    fi
+    
+    if [ "$is_termux" = true ]; then
+        echo -e "${GREEN}✅ Termux environment detected${RESET}"
+        
+        # Additional Termux info
+        if command -v termux-info >/dev/null 2>&1; then
+            local termux_version=$(termux-info 2>/dev/null | grep "Termux version" | cut -d: -f2 | xargs || echo "Unknown")
+            echo -e "${WHITE}   Termux version: ${CYAN}$termux_version${RESET}"
+        fi
+        
+        log_message "SUCCESS" "Termux environment verified"
+    else
+        echo -e "${RED}❌ This script must be run in Termux!${RESET}"
+        echo -e "${WHITE}   Please install and run this script from the Termux app.${RESET}"
+        log_message "ERROR" "Not running in Termux environment"
+        exit 1
+    fi
+    
     # Check storage space
-    local available_space=$(df "$HOME" | awk 'NR==2 {print $4}')
+    local available_space=$(df "$HOME" 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
     local required_space=4194304  # 4GB in KB
     
-    if [ "$available_space" -lt "$required_space" ]; then
+    if [ "$available_space" -gt 0 ] && [ "$available_space" -lt "$required_space" ]; then
         echo -e "${RED}❌ Insufficient storage space!${RESET}"
         echo -e "${WHITE}   Required: 4GB, Available: $((available_space/1024/1024))GB${RESET}"
         log_message "ERROR" "Insufficient storage space"
         exit 1
     else
-        echo -e "${GREEN}✓ Storage check passed${RESET} ($(((available_space/1024/1024)))GB available)"
-    fi
-    
-    # Check Termux version
-    if [ -f "$PREFIX/etc/termux-release" ]; then
-        echo -e "${GREEN}✓ Termux environment detected${RESET}"
-    else
-        echo -e "${RED}❌ This script must be run in Termux!${RESET}"
-        log_message "ERROR" "Not running in Termux environment"
-        exit 1
+        local available_gb=$((available_space/1024/1024))
+        if [ "$available_gb" -gt 0 ]; then
+            echo -e "${GREEN}✅ Storage check passed${RESET} (${available_gb}GB available)"
+        else
+            echo -e "${YELLOW}⚠️  Could not determine storage space${RESET}"
+        fi
     fi
     
     echo
@@ -130,15 +174,17 @@ install_packages() {
     sleep 1
     
     if [ ! -d '/data/data/com.termux/files/home/storage' ]; then
-        termux-setup-storage
+        echo -e "\n${CYAN}📁 Setting up storage access...${RESET}"
+        termux-setup-storage 2>/dev/null || true
         log_message "INFO" "Storage access configured"
     fi
     
     # Step 2: Update packages
     ((current++))
     show_progress $current $steps "Updating package repositories..."
-    sleep 2
+    sleep 1
     
+    echo -e "\n${CYAN}🔄 Updating package repositories...${RESET}"
     yes | pkg upgrade >/dev/null 2>&1 &
     show_spinner "Updating packages" $!
     
@@ -160,7 +206,7 @@ install_packages() {
     ((current++))
     if [ ${#missing_packages[@]} -eq 0 ]; then
         show_progress $current $steps "All packages already installed"
-        echo -e "\n${GREEN}✓ All required packages are already installed${RESET}"
+        echo -e "\n${GREEN}✅ All required packages are already installed${RESET}"
     else
         show_progress $current $steps "Installing missing packages..."
         echo
@@ -183,7 +229,7 @@ install_distribution() {
     echo -e "${MAGENTA}╚══════════════════════════════════════════════════════════════╝${RESET}"
     echo
     
-    termux-reload-settings
+    termux-reload-settings 2>/dev/null || true
     
     if [ -d "$DEBIAN_DIR" ]; then
         echo -e "${YELLOW}⚠️  Debian distribution already exists${RESET}"
@@ -199,10 +245,10 @@ install_distribution() {
     proot-distro install debian >/dev/null 2>&1 &
     show_spinner "Installing Debian distribution" $!
     
-    termux-reload-settings
+    termux-reload-settings 2>/dev/null || true
     
     if [ -d "$DEBIAN_DIR" ]; then
-        echo -e "${GREEN}✓ Debian distribution installed successfully${RESET}"
+        echo -e "${GREEN}✅ Debian distribution installed successfully${RESET}"
         log_message "SUCCESS" "Debian distribution installed"
     else
         echo -e "${RED}❌ Failed to install Debian distribution${RESET}"
@@ -246,9 +292,11 @@ configure_audio() {
     [ ! -e "$HOME/.sound" ] && touch "$HOME/.sound"
     
     # Remove existing entries to prevent duplicates
-    sed -i '/pacmd load-module module-aaudio-sink/d' "$HOME/.sound" 2>/dev/null
-    sed -i '/pulseaudio --start --exit-idle-time=-1/d' "$HOME/.sound" 2>/dev/null
-    sed -i '/pacmd load-module module-native-protocol-tcp/d' "$HOME/.sound" 2>/dev/null
+    if [ -f "$HOME/.sound" ]; then
+        sed -i '/pacmd load-module module-aaudio-sink/d' "$HOME/.sound" 2>/dev/null
+        sed -i '/pulseaudio --start --exit-idle-time=-1/d' "$HOME/.sound" 2>/dev/null
+        sed -i '/pacmd load-module module-native-protocol-tcp/d' "$HOME/.sound" 2>/dev/null
+    fi
     
     # Add new configuration
     {
@@ -257,7 +305,7 @@ configure_audio() {
         echo "pacmd load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1"
     } >> "$HOME/.sound"
     
-    echo -e "${GREEN}✓ Audio configuration completed${RESET}"
+    echo -e "${GREEN}✅ Audio configuration completed${RESET}"
     log_message "SUCCESS" "Audio system configured"
 }
 
@@ -266,19 +314,19 @@ setup_vnc_tools() {
     echo -e "${BLUE}🖥️  Setting up VNC tools...${RESET}"
     
     local vnc_files=("vncstart" "vncstop")
-    local base_url="https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro"
     
     for file in "${vnc_files[@]}"; do
         local local_path="$CURR_DIR/distro/$file"
         local target_path="$DEBIAN_DIR/usr/local/bin/$file"
+        local download_url="$REPO_BASE/distro/$file"
         
         if [ -e "$local_path" ]; then
             cp -f "$local_path" "$target_path"
-            echo -e "${GREEN}✓ Copied local $file${RESET}"
+            echo -e "${GREEN}✅ Copied local $file${RESET}"
         else
-            if smart_download "$CURR_DIR/$file" "$base_url/$file"; then
+            if smart_download "$CURR_DIR/$file" "$download_url"; then
                 mv -f "$CURR_DIR/$file" "$target_path"
-                echo -e "${GREEN}✓ Downloaded and installed $file${RESET}"
+                echo -e "${GREEN}✅ Downloaded and installed $file${RESET}"
             else
                 echo -e "${RED}❌ Failed to setup $file${RESET}"
                 return 1
@@ -301,7 +349,7 @@ setup_config_tool() {
     
     if [ -e "$local_config" ]; then
         cp -f "$local_config" "$target_config"
-        echo -e "${GREEN}✓ Used local configuration tool${RESET}"
+        echo -e "${GREEN}✅ Used local configuration tool${RESET}"
     else
         local ubuntu_config="$CURR_DIR/distro/ubuntu-config.sh"
         if [ -e "$ubuntu_config" ]; then
@@ -309,14 +357,14 @@ setup_config_tool() {
             sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/$config_file"
             sed -i 's/ubuntu/debian/g' "$CURR_DIR/$config_file"
             mv -f "$CURR_DIR/$config_file" "$target_config"
-            echo -e "${GREEN}✓ Converted Ubuntu config to Debian${RESET}"
+            echo -e "${GREEN}✅ Converted Ubuntu config to Debian${RESET}"
         else
-            local config_url="https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/ubuntu-config.sh"
+            local config_url="$REPO_BASE/distro/ubuntu-config.sh"
             if smart_download "$CURR_DIR/$config_file" "$config_url"; then
                 sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/$config_file"
                 sed -i 's/ubuntu/debian/g' "$CURR_DIR/$config_file"
                 mv -f "$CURR_DIR/$config_file" "$target_config"
-                echo -e "${GREEN}✓ Downloaded and configured tool${RESET}"
+                echo -e "${GREEN}✅ Downloaded and configured tool${RESET}"
             else
                 echo -e "${YELLOW}⚠️  Configuration tool setup failed${RESET}"
                 return 1
@@ -340,14 +388,14 @@ setup_user_script() {
         cp -f "$local_user" "$target_user"
         sed -i 's/Ubuntu/Debian/g' "$target_user"
         sed -i 's/ubuntu/debian/g' "$target_user"
-        echo -e "${GREEN}✓ Used local user script${RESET}"
+        echo -e "${GREEN}✅ Used local user script${RESET}"
     else
-        local user_url="https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/user.sh"
+        local user_url="$REPO_BASE/distro/user.sh"
         if smart_download "$CURR_DIR/$user_script" "$user_url"; then
             sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/$user_script"
             sed -i 's/ubuntu/debian/g' "$CURR_DIR/$user_script"
             mv -f "$CURR_DIR/$user_script" "$target_user"
-            echo -e "${GREEN}✓ Downloaded user management script${RESET}"
+            echo -e "${GREEN}✅ Downloaded user management script${RESET}"
         else
             echo -e "${RED}❌ Failed to setup user script${RESET}"
             return 1
@@ -363,17 +411,19 @@ finalize_setup() {
     echo -e "${YELLOW}🔧 Finalizing environment setup...${RESET}"
     
     # Set timezone
-    echo "$(getprop persist.sys.timezone)" > "$DEBIAN_DIR/etc/timezone"
-    echo -e "${GREEN}✓ Timezone configured${RESET}"
+    if [ -d "$DEBIAN_DIR/etc" ]; then
+        echo "$(getprop persist.sys.timezone 2>/dev/null || echo 'UTC')" > "$DEBIAN_DIR/etc/timezone"
+        echo -e "${GREEN}✅ Timezone configured${RESET}"
+    fi
     
     # Create debian command
     echo "proot-distro login debian" > "$PREFIX/bin/debian"
     chmod +x "$PREFIX/bin/debian"
-    echo -e "${GREEN}✓ Debian command created${RESET}"
+    echo -e "${GREEN}✅ Debian command created${RESET}"
     
     # Reload settings
-    termux-reload-settings
-    echo -e "${GREEN}✓ Termux settings reloaded${RESET}"
+    termux-reload-settings 2>/dev/null || true
+    echo -e "${GREEN}✅ Termux settings reloaded${RESET}"
     
     log_message "SUCCESS" "Environment setup finalized"
 }
@@ -400,6 +450,8 @@ show_success_message() {
     echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
     echo -e "${GREEN}║${RESET}  ${MAGENTA}💡 Install VNC Viewer from Play Store for GUI access${RESET}    ${GREEN}║${RESET}"
     echo -e "${GREEN}║${RESET}  ${MAGENTA}🔗 Connect to: localhost:1${RESET}                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${CYAN}Created by: Sandeep Gaddam | Enhanced Experience${RESET}        ${GREEN}║${RESET}"
     echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
     echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${RESET}"
     
@@ -428,10 +480,20 @@ handle_error() {
     exit 1
 }
 
+# Cleanup function
+cleanup() {
+    [ -f "$LOG_FILE.tmp" ] && rm -f "$LOG_FILE.tmp"
+    log_message "INFO" "Setup cleanup completed"
+}
+
 # Main execution function
 main() {
     # Initialize logging
     log_message "INFO" "Starting Debian GUI setup v$SCRIPT_VERSION"
+    
+    # Set up error trapping
+    trap 'handle_error "Unexpected error occurred during setup"' ERR
+    trap cleanup EXIT
     
     show_banner
     check_system_requirements
@@ -450,9 +512,6 @@ main() {
     # Clean up log file on success
     [ -f "$LOG_FILE" ] && rm -f "$LOG_FILE"
 }
-
-# Set up error trapping
-trap 'handle_error "Unexpected error occurred"' ERR
 
 # Execute main function
 main "$@"
