@@ -1,164 +1,458 @@
 #!/bin/bash
 
-R="$(printf '\033[1;31m')"
-G="$(printf '\033[1;32m')"
-Y="$(printf '\033[1;33m')"
-B="$(printf '\033[1;34m')"
-C="$(printf '\033[1;36m')"
-W="$(printf '\033[1;37m')" 
+# Enhanced Debian Setup with Professional UI/UX
+# Author: Sandeep Gaddam
+# Version: 2.0
 
+# Color definitions
+declare -r RED='\033[1;31m'
+declare -r GREEN='\033[1;32m'
+declare -r YELLOW='\033[1;33m'
+declare -r BLUE='\033[1;34m'
+declare -r CYAN='\033[1;36m'
+declare -r WHITE='\033[1;37m'
+declare -r MAGENTA='\033[1;35m'
+declare -r RESET='\033[0m'
+declare -r BOLD='\033[1m'
+
+# Script configuration
+SCRIPT_NAME="Debian GUI Setup"
+SCRIPT_VERSION="2.0"
+LOG_FILE="$HOME/.debian-setup.log"
 CURR_DIR=$(realpath "$(dirname "$BASH_SOURCE")")
 DEBIAN_DIR="$PREFIX/var/lib/proot-distro/installed-rootfs/debian"
 
-banner() {
-	clear
-	cat <<- EOF
-		${Y}    _  _ ___  _  _ _  _ ___ _  _    _  _ ____ ___  
-		${C}    |  | |__] |  | |\ |  |  |  |    |\/| |  | |  \ 
-		${G}    |__| |__] |__| | \|  |  |__|    |  | |__| |__/ 
-
-	EOF
-	echo -e "${G}     A modded gui version of Debian for Termux\n\n"${W}
+# Logging function
+log_message() {
+    local level="$1"
+    local message="$2"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
 }
 
-package() {
-	banner
-	echo -e "${R} [${W}-${R}]${C} Checking required packages..."${W}
-	
-	[ ! -d '/data/data/com.termux/files/home/storage' ] && echo -e "${R} [${W}-${R}]${C} Setting up Storage.."${W} && termux-setup-storage
-
-	if [[ $(command -v pulseaudio) && $(command -v proot-distro) ]]; then
-		echo -e "\n${R} [${W}-${R}]${G} Packages already installed."${W}
-	else
-		yes | pkg upgrade
-		packs=(pulseaudio proot-distro)
-		for x in "${packs[@]}"; do
-			type -p "$x" &>/dev/null || {
-				echo -e "\n${R} [${W}-${R}]${G} Installing package : ${Y}$x${C}"${W}
-				yes | pkg install "$x"
-			}
-		done
-	fi
+# Enhanced animated banner
+show_banner() {
+    clear
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}██████╗ ███████╗██████╗ ██╗ █████╗ ███╗   ██╗${RESET}        ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}██╔══██╗██╔════╝██╔══██╗██║██╔══██╗████╗  ██║${RESET}        ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}██║  ██║█████╗  ██████╔╝██║███████║██╔██╗ ██║${RESET}        ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}██║  ██║██╔══╝  ██╔══██╗██║██╔══██║██║╚██╗██║${RESET}        ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}██████╔╝███████╗██████╔╝██║██║  ██║██║ ╚████║${RESET}        ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${YELLOW}╚═════╝ ╚══════╝╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝${RESET}        ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}        ${MAGENTA}${BOLD}G U I   S E T U P   T O O L   v${SCRIPT_VERSION}${RESET}          ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${GREEN}Professional Debian GUI Environment for Termux${RESET}      ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}    ${WHITE}By: Sandeep Gaddam | Enhanced Experience${RESET}            ${CYAN}║${RESET}"
+    echo -e "${CYAN}║${RESET}                                                              ${CYAN}║${RESET}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    echo
 }
 
-distro() {
-	echo -e "\n${R} [${W}-${R}]${C} Checking for Distro..."${W}
-	termux-reload-settings
-	
-	if [[ -d "$DEBIAN_DIR" ]]; then
-		echo -e "\n${R} [${W}-${R}]${G} Distro already installed."${W}
-		exit 0
-	else
-		proot-distro install debian
-		termux-reload-settings
-	fi
-	
-	if [[ -d "$DEBIAN_DIR" ]]; then
-		echo -e "\n${R} [${W}-${R}]${G} Installed Successfully !!"${W}
-	else
-		echo -e "\n${R} [${W}-${R}]${G} Error Installing Distro !\n"${W}
-		exit 0
-	fi
+# Advanced progress bar with animation
+show_progress() {
+    local current=$1
+    local total=$2
+    local message=$3
+    local percentage=$((current * 100 / total))
+    local filled=$((percentage / 2))
+    local empty=$((50 - filled))
+    
+    printf "\r${CYAN}[${RESET}"
+    printf "%${filled}s" | tr ' ' '█'
+    printf "%${empty}s" | tr ' ' '░'
+    printf "${CYAN}]${RESET} ${YELLOW}%3d%%${RESET} ${WHITE}%s${RESET}" "$percentage" "$message"
 }
 
-sound() {
-	echo -e "\n${R} [${W}-${R}]${C} Fixing Sound Problem..."${W}
-	[ ! -e "$HOME/.sound" ] && touch "$HOME/.sound"
-	echo "pacmd load-module module-aaudio-sink" >> "$HOME/.sound"
-        echo "pulseaudio --start --exit-idle-time=-1" >> "$HOME/.sound"
-	echo "pacmd load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" >> "$HOME/.sound"
+# Spinner animation for longer operations
+show_spinner() {
+    local message="$1"
+    local pid="$2"
+    local delay=0.1
+    local spinstr='|/-\'
+    
+    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+        local temp=${spinstr#?}
+        printf "\r${CYAN}[${spinstr:0:1}]${RESET} ${WHITE}%s${RESET}" "$message"
+        spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+    done
+    printf "\r${GREEN}[✓]${RESET} ${WHITE}%s - Complete${RESET}\n" "$message"
 }
 
-downloader(){
-	path="$1"
-	[ -e "$path" ] && rm -rf "$path"
-	echo "Downloading $(basename $1)..."
-	curl --progress-bar --insecure --fail \
-		 --retry-connrefused --retry 3 --retry-delay 2 \
-		  --location --output ${path} "$2"
-	echo
+# System requirements check
+check_system_requirements() {
+    echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${BLUE}║${RESET}                 ${BOLD}SYSTEM REQUIREMENTS CHECK${RESET}                ${BLUE}║${RESET}"
+    echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    echo
+    
+    # Check storage space
+    local available_space=$(df "$HOME" | awk 'NR==2 {print $4}')
+    local required_space=4194304  # 4GB in KB
+    
+    if [ "$available_space" -lt "$required_space" ]; then
+        echo -e "${RED}❌ Insufficient storage space!${RESET}"
+        echo -e "${WHITE}   Required: 4GB, Available: $((available_space/1024/1024))GB${RESET}"
+        log_message "ERROR" "Insufficient storage space"
+        exit 1
+    else
+        echo -e "${GREEN}✓ Storage check passed${RESET} ($(((available_space/1024/1024)))GB available)"
+    fi
+    
+    # Check Termux version
+    if [ -f "$PREFIX/etc/termux-release" ]; then
+        echo -e "${GREEN}✓ Termux environment detected${RESET}"
+    else
+        echo -e "${RED}❌ This script must be run in Termux!${RESET}"
+        log_message "ERROR" "Not running in Termux environment"
+        exit 1
+    fi
+    
+    echo
 }
 
-setup_vnc() {
-	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/vncstart" ]]; then
-		cp -f "$CURR_DIR/distro/vncstart" "$DEBIAN_DIR/usr/local/bin/vncstart"
-	else
-		downloader "$CURR_DIR/vncstart" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/vncstart"
-		mv -f "$CURR_DIR/vncstart" "$DEBIAN_DIR/usr/local/bin/vncstart"
-	fi
-
-	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/vncstop" ]]; then
-		cp -f "$CURR_DIR/distro/vncstop" "$DEBIAN_DIR/usr/local/bin/vncstop"
-	else
-		downloader "$CURR_DIR/vncstop" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/vncstop"
-		mv -f "$CURR_DIR/vncstop" "$DEBIAN_DIR/usr/local/bin/vncstop"
-	fi
-	chmod +x "$DEBIAN_DIR/usr/local/bin/vncstart"
-	chmod +x "$DEBIAN_DIR/usr/local/bin/vncstop"
+# Enhanced package installation with progress
+install_packages() {
+    local steps=4
+    local current=0
+    
+    echo -e "${YELLOW}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${YELLOW}║${RESET}                   ${BOLD}PACKAGE INSTALLATION${RESET}                   ${YELLOW}║${RESET}"
+    echo -e "${YELLOW}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    echo
+    
+    # Step 1: Setup storage
+    ((current++))
+    show_progress $current $steps "Setting up storage access..."
+    sleep 1
+    
+    if [ ! -d '/data/data/com.termux/files/home/storage' ]; then
+        termux-setup-storage
+        log_message "INFO" "Storage access configured"
+    fi
+    
+    # Step 2: Update packages
+    ((current++))
+    show_progress $current $steps "Updating package repositories..."
+    sleep 2
+    
+    yes | pkg upgrade >/dev/null 2>&1 &
+    show_spinner "Updating packages" $!
+    
+    # Step 3: Check existing packages
+    ((current++))
+    show_progress $current $steps "Checking required packages..."
+    sleep 1
+    
+    local missing_packages=()
+    local required_packages=("pulseaudio" "proot-distro")
+    
+    for pkg in "${required_packages[@]}"; do
+        if ! command -v "$pkg" >/dev/null 2>&1; then
+            missing_packages+=("$pkg")
+        fi
+    done
+    
+    # Step 4: Install missing packages
+    ((current++))
+    if [ ${#missing_packages[@]} -eq 0 ]; then
+        show_progress $current $steps "All packages already installed"
+        echo -e "\n${GREEN}✓ All required packages are already installed${RESET}"
+    else
+        show_progress $current $steps "Installing missing packages..."
+        echo
+        
+        for pkg in "${missing_packages[@]}"; do
+            echo -e "${CYAN}Installing: ${YELLOW}$pkg${RESET}"
+            yes | pkg install "$pkg" >/dev/null 2>&1 &
+            show_spinner "Installing $pkg" $!
+            log_message "INFO" "Installed package: $pkg"
+        done
+    fi
+    
+    echo
 }
 
+# Enhanced distribution installation
+install_distribution() {
+    echo -e "${MAGENTA}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${MAGENTA}║${RESET}                ${BOLD}DEBIAN DISTRIBUTION SETUP${RESET}                ${MAGENTA}║${RESET}"
+    echo -e "${MAGENTA}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    echo
+    
+    termux-reload-settings
+    
+    if [ -d "$DEBIAN_DIR" ]; then
+        echo -e "${YELLOW}⚠️  Debian distribution already exists${RESET}"
+        echo -e "${WHITE}Skipping installation...${RESET}"
+        log_message "INFO" "Debian distribution already exists"
+        return 0
+    fi
+    
+    echo -e "${CYAN}📥 Downloading and installing Debian distribution...${RESET}"
+    echo -e "${WHITE}This may take several minutes depending on your connection.${RESET}"
+    echo
+    
+    proot-distro install debian >/dev/null 2>&1 &
+    show_spinner "Installing Debian distribution" $!
+    
+    termux-reload-settings
+    
+    if [ -d "$DEBIAN_DIR" ]; then
+        echo -e "${GREEN}✓ Debian distribution installed successfully${RESET}"
+        log_message "SUCCESS" "Debian distribution installed"
+    else
+        echo -e "${RED}❌ Failed to install Debian distribution${RESET}"
+        log_message "ERROR" "Failed to install Debian distribution"
+        exit 1
+    fi
+    
+    echo
+}
+
+# Smart file downloader with retry logic
+smart_download() {
+    local file_path="$1"
+    local url="$2"
+    local max_retries=3
+    local retry_count=0
+    
+    [ -e "$file_path" ] && rm -rf "$file_path"
+    
+    while [ $retry_count -lt $max_retries ]; do
+        echo -e "${CYAN}📥 Downloading $(basename "$file_path")... (Attempt $((retry_count + 1))/${max_retries})${RESET}"
+        
+        if curl --progress-bar --insecure --fail --retry-connrefused --retry 3 --retry-delay 2 --location --output "$file_path" "$url" 2>/dev/null; then
+            log_message "SUCCESS" "Downloaded: $(basename "$file_path")"
+            return 0
+        else
+            ((retry_count++))
+            log_message "WARNING" "Download attempt $retry_count failed for $(basename "$file_path")"
+            sleep 2
+        fi
+    done
+    
+    log_message "ERROR" "Failed to download $(basename "$file_path") after $max_retries attempts"
+    return 1
+}
+
+# Audio configuration with enhanced feedback
+configure_audio() {
+    echo -e "${GREEN}🔊 Configuring audio system...${RESET}"
+    
+    [ ! -e "$HOME/.sound" ] && touch "$HOME/.sound"
+    
+    # Remove existing entries to prevent duplicates
+    sed -i '/pacmd load-module module-aaudio-sink/d' "$HOME/.sound" 2>/dev/null
+    sed -i '/pulseaudio --start --exit-idle-time=-1/d' "$HOME/.sound" 2>/dev/null
+    sed -i '/pacmd load-module module-native-protocol-tcp/d' "$HOME/.sound" 2>/dev/null
+    
+    # Add new configuration
+    {
+        echo "pacmd load-module module-aaudio-sink"
+        echo "pulseaudio --start --exit-idle-time=-1"
+        echo "pacmd load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1"
+    } >> "$HOME/.sound"
+    
+    echo -e "${GREEN}✓ Audio configuration completed${RESET}"
+    log_message "SUCCESS" "Audio system configured"
+}
+
+# VNC setup with error handling
+setup_vnc_tools() {
+    echo -e "${BLUE}🖥️  Setting up VNC tools...${RESET}"
+    
+    local vnc_files=("vncstart" "vncstop")
+    local base_url="https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro"
+    
+    for file in "${vnc_files[@]}"; do
+        local local_path="$CURR_DIR/distro/$file"
+        local target_path="$DEBIAN_DIR/usr/local/bin/$file"
+        
+        if [ -e "$local_path" ]; then
+            cp -f "$local_path" "$target_path"
+            echo -e "${GREEN}✓ Copied local $file${RESET}"
+        else
+            if smart_download "$CURR_DIR/$file" "$base_url/$file"; then
+                mv -f "$CURR_DIR/$file" "$target_path"
+                echo -e "${GREEN}✓ Downloaded and installed $file${RESET}"
+            else
+                echo -e "${RED}❌ Failed to setup $file${RESET}"
+                return 1
+            fi
+        fi
+        
+        chmod +x "$target_path"
+    done
+    
+    log_message "SUCCESS" "VNC tools configured"
+}
+
+# Configuration tool setup
 setup_config_tool() {
-	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/debian-config.sh" ]]; then
-		cp -f "$CURR_DIR/distro/debian-config.sh" "$DEBIAN_DIR/usr/local/bin/debian-config"
-	else
-		# Convert ubuntu-config.sh to debian-config.sh
-		if [[ -e "$CURR_DIR/distro/ubuntu-config.sh" ]]; then
-			cp -f "$CURR_DIR/distro/ubuntu-config.sh" "$CURR_DIR/distro/debian-config.sh"
-			sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/distro/debian-config.sh"
-			sed -i 's/ubuntu/debian/g' "$CURR_DIR/distro/debian-config.sh"
-			cp -f "$CURR_DIR/distro/debian-config.sh" "$DEBIAN_DIR/usr/local/bin/debian-config"
-		else
-			downloader "$CURR_DIR/debian-config.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/ubuntu-config.sh"
-			sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/debian-config.sh" 
-			sed -i 's/ubuntu/debian/g' "$CURR_DIR/debian-config.sh"
-			mv -f "$CURR_DIR/debian-config.sh" "$DEBIAN_DIR/usr/local/bin/debian-config"
-		fi
-	fi
-	chmod +x "$DEBIAN_DIR/usr/local/bin/debian-config"
+    echo -e "${CYAN}⚙️  Setting up configuration tool...${RESET}"
+    
+    local config_file="debian-config.sh"
+    local local_config="$CURR_DIR/distro/$config_file"
+    local target_config="$DEBIAN_DIR/usr/local/bin/debian-config"
+    
+    if [ -e "$local_config" ]; then
+        cp -f "$local_config" "$target_config"
+        echo -e "${GREEN}✓ Used local configuration tool${RESET}"
+    else
+        local ubuntu_config="$CURR_DIR/distro/ubuntu-config.sh"
+        if [ -e "$ubuntu_config" ]; then
+            cp -f "$ubuntu_config" "$CURR_DIR/$config_file"
+            sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/$config_file"
+            sed -i 's/ubuntu/debian/g' "$CURR_DIR/$config_file"
+            mv -f "$CURR_DIR/$config_file" "$target_config"
+            echo -e "${GREEN}✓ Converted Ubuntu config to Debian${RESET}"
+        else
+            local config_url="https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/ubuntu-config.sh"
+            if smart_download "$CURR_DIR/$config_file" "$config_url"; then
+                sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/$config_file"
+                sed -i 's/ubuntu/debian/g' "$CURR_DIR/$config_file"
+                mv -f "$CURR_DIR/$config_file" "$target_config"
+                echo -e "${GREEN}✓ Downloaded and configured tool${RESET}"
+            else
+                echo -e "${YELLOW}⚠️  Configuration tool setup failed${RESET}"
+                return 1
+            fi
+        fi
+    fi
+    
+    chmod +x "$target_config"
+    log_message "SUCCESS" "Configuration tool setup completed"
 }
 
-permission() {
-	banner
-	echo -e "${R} [${W}-${R}]${C} Setting up Environment..."${W}
-
-	if [[ -d "$CURR_DIR/distro" ]] && [[ -e "$CURR_DIR/distro/user.sh" ]]; then
-		cp -f "$CURR_DIR/distro/user.sh" "$DEBIAN_DIR/root/user.sh"
-		sed -i 's/Ubuntu/Debian/g' "$DEBIAN_DIR/root/user.sh"
-		sed -i 's/ubuntu/debian/g' "$DEBIAN_DIR/root/user.sh"
-	else
-		downloader "$CURR_DIR/user.sh" "https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/user.sh"
-		sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/user.sh"
-		sed -i 's/ubuntu/debian/g' "$CURR_DIR/user.sh"
-		mv -f "$CURR_DIR/user.sh" "$DEBIAN_DIR/root/user.sh"
-	fi
-	chmod +x $DEBIAN_DIR/root/user.sh
-
-	setup_vnc
-	setup_config_tool
-	echo "$(getprop persist.sys.timezone)" > $DEBIAN_DIR/etc/timezone
-	echo "proot-distro login debian" > $PREFIX/bin/debian
-	chmod +x "$PREFIX/bin/debian"
-	termux-reload-settings
-
-	if [[ -e "$PREFIX/bin/debian" ]]; then
-		banner
-		cat <<- EOF
-			${R} [${W}-${R}]${G} Debian (CLI) is now Installed on your Termux
-			${R} [${W}-${R}]${G} Restart your Termux to Prevent Some Issues.
-			${R} [${W}-${R}]${G} Type ${C}debian${G} to run Debian CLI.
-			${R} [${W}-${R}]${G} If you Want to Use Debian in GUI MODE then ,
-			${R} [${W}-${R}]${G} Run ${C}debian${G} first & then type ${C}bash user.sh${W}
-			${R} [${W}-${R}]${G} To use the configuration tool, run ${C}debian-config${G} in GUI mode${W}
-		EOF
-		{ echo; sleep 2; exit 1; }
-	else
-		echo -e "\n${R} [${W}-${R}]${G} Error Installing Distro !"${W}
-		exit 0
-	fi
-
+# User setup script configuration
+setup_user_script() {
+    echo -e "${MAGENTA}👤 Setting up user management...${RESET}"
+    
+    local user_script="user.sh"
+    local local_user="$CURR_DIR/distro/$user_script"
+    local target_user="$DEBIAN_DIR/root/$user_script"
+    
+    if [ -e "$local_user" ]; then
+        cp -f "$local_user" "$target_user"
+        sed -i 's/Ubuntu/Debian/g' "$target_user"
+        sed -i 's/ubuntu/debian/g' "$target_user"
+        echo -e "${GREEN}✓ Used local user script${RESET}"
+    else
+        local user_url="https://raw.githubusercontent.com/MaheshTechnicals/modded-ubuntu/master/distro/user.sh"
+        if smart_download "$CURR_DIR/$user_script" "$user_url"; then
+            sed -i 's/Ubuntu/Debian/g' "$CURR_DIR/$user_script"
+            sed -i 's/ubuntu/debian/g' "$CURR_DIR/$user_script"
+            mv -f "$CURR_DIR/$user_script" "$target_user"
+            echo -e "${GREEN}✓ Downloaded user management script${RESET}"
+        else
+            echo -e "${RED}❌ Failed to setup user script${RESET}"
+            return 1
+        fi
+    fi
+    
+    chmod +x "$target_user"
+    log_message "SUCCESS" "User script configured"
 }
 
-package
-distro
-sound
-permission
+# Final environment setup
+finalize_setup() {
+    echo -e "${YELLOW}🔧 Finalizing environment setup...${RESET}"
+    
+    # Set timezone
+    echo "$(getprop persist.sys.timezone)" > "$DEBIAN_DIR/etc/timezone"
+    echo -e "${GREEN}✓ Timezone configured${RESET}"
+    
+    # Create debian command
+    echo "proot-distro login debian" > "$PREFIX/bin/debian"
+    chmod +x "$PREFIX/bin/debian"
+    echo -e "${GREEN}✓ Debian command created${RESET}"
+    
+    # Reload settings
+    termux-reload-settings
+    echo -e "${GREEN}✓ Termux settings reloaded${RESET}"
+    
+    log_message "SUCCESS" "Environment setup finalized"
+}
+
+# Success display with next steps
+show_success_message() {
+    echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${GREEN}║${RESET}                    ${BOLD}🎉 INSTALLATION COMPLETE! 🎉${RESET}               ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${WHITE}Debian GUI environment has been successfully installed!${RESET}  ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${YELLOW}📋 NEXT STEPS:${RESET}                                          ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${CYAN}1.${RESET} ${WHITE}Restart Termux to prevent any issues${RESET}                 ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${CYAN}2.${RESET} ${WHITE}Type ${YELLOW}'debian'${WHITE} to enter CLI mode${RESET}                      ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${CYAN}3.${RESET} ${WHITE}Run ${YELLOW}'bash user.sh'${WHITE} to setup GUI user${RESET}                 ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${CYAN}4.${RESET} ${WHITE}Restart Termux again after user setup${RESET}                ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${CYAN}5.${RESET} ${WHITE}Type ${YELLOW}'debian'${WHITE} then ${YELLOW}'sudo bash gui.sh'${WHITE} for GUI${RESET}          ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${YELLOW}🎮 USEFUL COMMANDS:${RESET}                                     ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${WHITE}• ${CYAN}vncstart${WHITE} - Start VNC server${RESET}                          ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${WHITE}• ${CYAN}vncstop${WHITE} - Stop VNC server${RESET}                           ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${WHITE}• ${CYAN}debian-config${WHITE} - Open configuration tool (GUI mode)${RESET}  ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${MAGENTA}💡 Install VNC Viewer from Play Store for GUI access${RESET}    ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}  ${MAGENTA}🔗 Connect to: localhost:1${RESET}                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}║${RESET}                                                              ${GREEN}║${RESET}"
+    echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    
+    log_message "SUCCESS" "Installation completed successfully"
+}
+
+# Error handling with detailed feedback
+handle_error() {
+    local error_msg="$1"
+    echo -e "\n${RED}╔══════════════════════════════════════════════════════════════╗${RESET}"
+    echo -e "${RED}║${RESET}                        ${BOLD}❌ ERROR ❌${RESET}                        ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}                                                              ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}An error occurred during installation:${RESET}                  ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${YELLOW}$error_msg${RESET}"
+    printf "${RED}║${RESET}%*s${RED}║${RESET}\n" $((62 - ${#error_msg})) ""
+    echo -e "${RED}║${RESET}                                                              ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${CYAN}💡 Troubleshooting:${RESET}                                     ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}• Check your internet connection${RESET}                        ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}• Ensure sufficient storage space (4GB+)${RESET}                ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}• Try running the script again${RESET}                          ${RED}║${RESET}"
+    echo -e "${RED}║${RESET}  ${WHITE}• Check log file: $LOG_FILE${RESET}"
+    echo -e "${RED}║${RESET}                                                              ${RED}║${RESET}"
+    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${RESET}"
+    
+    log_message "ERROR" "$error_msg"
+    exit 1
+}
+
+# Main execution function
+main() {
+    # Initialize logging
+    log_message "INFO" "Starting Debian GUI setup v$SCRIPT_VERSION"
+    
+    show_banner
+    check_system_requirements
+    install_packages
+    install_distribution
+    configure_audio
+    
+    echo -e "${BLUE}🔧 Setting up GUI components...${RESET}"
+    setup_vnc_tools || handle_error "Failed to setup VNC tools"
+    setup_config_tool || handle_error "Failed to setup configuration tool"
+    setup_user_script || handle_error "Failed to setup user script"
+    
+    finalize_setup
+    show_success_message
+    
+    # Clean up log file on success
+    [ -f "$LOG_FILE" ] && rm -f "$LOG_FILE"
+}
+
+# Set up error trapping
+trap 'handle_error "Unexpected error occurred"' ERR
+
+# Execute main function
+main "$@"
